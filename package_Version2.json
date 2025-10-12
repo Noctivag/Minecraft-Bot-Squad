@@ -1,0 +1,25 @@
+{
+  "name": "minecraft-bot-squad",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SMP-style multi-bot squad with local LLM, Gemini coordinator, RAG, crafting planner, validator, and adaptive learning.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "ingest": "node src/knowledge/ingest.js",
+    "migrate": "node src/learning/migrate.js",
+    "reflect": "node src/scheduler/cron.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.19.0",
+    "better-sqlite3": "^9.4.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "minecraft-data": "^3.67.0",
+    "mineflayer": "^4.20.1",
+    "mineflayer-pathfinder": "^2.7.0"
+  }
+}

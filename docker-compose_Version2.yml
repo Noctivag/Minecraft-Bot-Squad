@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  coordinator:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./db:/app/db
+      - ./data:/app/data
+    depends_on: []
+  # Optional: run Ollama locally (or install separately)
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama:/root/.ollama
+  #   restart: unless-stopped
+volumes:
+  ollama:

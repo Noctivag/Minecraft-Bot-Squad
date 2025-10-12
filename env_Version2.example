@@ -1,0 +1,20 @@
+# Coordinator
+COORDINATOR_PORT=3100
+
+# Gemini
+GEMINI_API_KEY=your_ai_studio_key_here
+GEMINI_MODEL=gemini-2.5-pro
+
+# Ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.1:8b-instruct
+OLLAMA_EMBED_MODEL=nomic-embed-text
+
+# Database
+BRAIN_DB_PATH=./db/bot_brain.sqlite
+
+# Agents (comma separated)
+AGENTS=Alex,Blaze,Cora,Dune,Eli
+
+# Optional knowledge dir
+WIKI_DIR=./data/wiki
