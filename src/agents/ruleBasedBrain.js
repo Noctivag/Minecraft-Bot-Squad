@@ -1,5 +1,6 @@
 /**
  * Rule-Based Intelligent Brain - No LLM required!
+ * OPTIMIZED for maximum performance with caching and monitoring
  *
  * This brain makes smart decisions using rules, priorities, and state analysis
  * instead of requiring external LLM calls.
@@ -7,6 +8,9 @@
 
 const { logEvent } = require("../memory/store");
 const { recordMetric } = require("../learning/metrics");
+const { performanceMonitor } = require("../utils/performanceMonitor");
+const { caches } = require("../utils/cache");
+const config = require("../config/optimizations");
 
 /**
  * Intelligent decision-making system without LLM
@@ -19,64 +23,84 @@ class RuleBasedBrain {
     this.currentGoal = null;
     this.goalProgress = 0;
     this.lastDecisionTime = 0;
-    this.decisionCooldown = 3000; // 3 seconds between decisions
+    this.decisionCooldown = config.brain.decisionCooldown;
+    this.stateCache = null;
+    this.stateCacheTime = 0;
+    this.decisionCount = 0;
   }
 
   /**
-   * Main decision-making function
+   * Main decision-making function (OPTIMIZED)
    * Returns an action based on current state and priorities
    */
   async makeDecision(perception, inventory, combat, farming, building) {
-    // Check if we should make a new decision
-    if (Date.now() - this.lastDecisionTime < this.decisionCooldown) {
-      return { action: "wait", reason: "cooldown" };
+    performanceMonitor.start(`brain_decision_${this.agentName}`);
+
+    try {
+      // Check if we should make a new decision
+      if (Date.now() - this.lastDecisionTime < this.decisionCooldown) {
+        return { action: "wait", reason: "cooldown" };
+      }
+
+      this.lastDecisionTime = Date.now();
+      this.decisionCount++;
+
+      // Analyze current state (with caching)
+      const state = this.analyzeState(perception, inventory, combat);
+
+      // Priority-based decision tree
+      const thresholds = config.brain.priorityThresholds;
+
+      // 1. SURVIVAL - Highest priority
+      if (state.health < thresholds.lowHealth || state.danger >= thresholds.survival) {
+        return this.decideSurvival(state, perception, combat);
+      }
+
+      // 2. MAINTENANCE - Basic needs
+      if (state.hunger < thresholds.lowHunger || state.inventoryUtil >= thresholds.inventoryFull) {
+        return this.decideMaintenance(state, inventory);
+      }
+
+      // 3. DEFENSE - Moderate threats
+      if (state.danger >= thresholds.defense && this.capabilities.includes("combat")) {
+        return this.decideDefense(state, combat);
+      }
+
+      // 4. TASKS - Assigned work
+      const assignedTask = this.getAssignedTask();
+      if (assignedTask) {
+        return this.decideTaskExecution(assignedTask, state);
+      }
+
+      // 5. OPPORTUNITIES - Proactive actions
+      const opportunity = this.findBestOpportunity(perception, state);
+      if (opportunity) {
+        return this.decideOpportunity(opportunity, state);
+      }
+
+      // 6. IDLE - Default behaviors
+      return this.decideIdle(state);
+
+    } finally {
+      performanceMonitor.end(`brain_decision_${this.agentName}`);
     }
-
-    this.lastDecisionTime = Date.now();
-
-    // Analyze current state
-    const state = this.analyzeState(perception, inventory, combat);
-
-    // Priority-based decision tree
-
-    // 1. SURVIVAL - Highest priority
-    if (state.health < 10 || state.danger >= 30) {
-      return this.decideSurvival(state, perception, combat);
-    }
-
-    // 2. MAINTENANCE - Basic needs
-    if (state.hunger < 10 || state.inventoryFull) {
-      return this.decideMaintenance(state, inventory);
-    }
-
-    // 3. DEFENSE - Moderate threats
-    if (state.danger >= 15 && this.capabilities.includes("combat")) {
-      return this.decideDefense(state, combat);
-    }
-
-    // 4. TASKS - Assigned work
-    const assignedTask = this.getAssignedTask();
-    if (assignedTask) {
-      return this.decideTaskExecution(assignedTask, state);
-    }
-
-    // 5. OPPORTUNITIES - Proactive actions
-    const opportunity = this.findBestOpportunity(perception, state);
-    if (opportunity) {
-      return this.decideOpportunity(opportunity, state);
-    }
-
-    // 6. IDLE - Default behaviors
-    return this.decideIdle(state);
   }
 
   /**
-   * Analyze current bot state
+   * Analyze current bot state (OPTIMIZED with caching)
    */
   analyzeState(perception, inventory, combat) {
+    // Use cached state if recent enough (< 1 second old)
+    const now = Date.now();
+    if (config.brain.stateAnalysisCaching && this.stateCache && (now - this.stateCacheTime) < 1000) {
+      return this.stateCache;
+    }
+
+    performanceMonitor.start(`brain_analyze_${this.agentName}`);
+
     const summary = perception.getSummary();
 
-    return {
+    const state = {
       health: this.bot.health,
       hunger: this.bot.food,
       position: this.bot.entity.position,
@@ -88,6 +112,14 @@ class RuleBasedBrain {
       opportunities: summary.opportunities,
       combatMode: combat.combatMode
     };
+
+    // Cache the state
+    this.stateCache = state;
+    this.stateCacheTime = now;
+
+    performanceMonitor.end(`brain_analyze_${this.agentName}`);
+
+    return state;
   }
 
   /**
@@ -391,6 +423,22 @@ class RuleBasedBrain {
 
       this.currentGoal = null;
     }
+  }
+
+  /**
+   * Get brain performance statistics
+   */
+  getPerformanceStats() {
+    const decisionMetric = performanceMonitor.getMetric(`brain_decision_${this.agentName}`);
+    const analyzeMetric = performanceMonitor.getMetric(`brain_analyze_${this.agentName}`);
+
+    return {
+      totalDecisions: this.decisionCount,
+      avgDecisionTime: decisionMetric ? Math.round(decisionMetric.avgTime * 100) / 100 : 0,
+      avgAnalyzeTime: analyzeMetric ? Math.round(analyzeMetric.avgTime * 100) / 100 : 0,
+      currentGoal: this.currentGoal?.goal || "none",
+      cacheHits: this.stateCache ? "enabled" : "disabled"
+    };
   }
 }
 
