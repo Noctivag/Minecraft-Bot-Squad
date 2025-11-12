@@ -70,6 +70,40 @@ Complete all Minecraft achievements:
 - **Priority System**: Works on achievements in optimal order
 - **Progress Tracking**: Track completion by category
 
+### 💰 Villager Trading System
+Smart villager trading and economy:
+- **Trade with Villagers**: Auto-trade for rare items and enchanted books
+- **Emerald Economy**: Earn emeralds by selling crops, ores, and resources
+- **Trading Halls**: Build dedicated trading halls with 20 villager stalls
+- **Smart Purchasing**: Buy tools, armor, food, and special items
+- **50+ Trade Goals**: Enchanted books (Mending, Fortune, etc.), diamond gear, ender pearls, resources
+
+### 🗺️ Exploration System
+Systematic world exploration:
+- **Discover All Biomes**: Track and find all 30+ Minecraft biomes
+- **Find Structures**: Locate villages, temples, mansions, monuments, fortresses
+- **Smart Exploration**: Spiral, grid, or random exploration patterns
+- **Points of Interest**: Mark important locations
+- **Progress Tracking**: Track chunks explored, distance traveled, structures found
+
+### 🛡️ Defense System
+Protect your base from hostile mobs:
+- **Threat Detection**: Auto-detect hostile mobs within protected area
+- **Active Defense**: Fight off zombies, skeletons, creepers, and more
+- **Defensive Structures**: Build walls, towers, and traps
+- **Patrol System**: 8 patrol points around base perimeter
+- **Alert Levels**: 4-tier alert system (Safe → Caution → Danger → Emergency)
+- **Defense Stats**: Track threats defeated and alert history
+
+### 🧪 Potion Brewing System
+Auto-brew potions for any situation:
+- **Combat Potions**: Strength II, Swiftness, Regeneration II, Healing II
+- **Defensive Potions**: Fire Resistance, Turtle Master, Slow Falling
+- **Utility Potions**: Night Vision, Water Breathing, Invisibility
+- **Situation-Based**: Recommendations for combat, nether, end, exploration
+- **Extended & Upgraded**: Brew extended duration and level II potions
+- **Auto-Restocking**: Maintains minimum stock of essential potions
+
 ### 🧠 Intelligent AI
 - Rule-based decision making (no LLM!)
 - Priority-based actions
@@ -365,6 +399,10 @@ new MinecraftBotSquadPlugin({
 - ✅ Achievement tracking (50+ achievements)
 - ✅ Storage management (auto-stocking)
 - ✅ Base/city expansion (5 phases)
+- ✅ Villager trading (emerald economy)
+- ✅ World exploration (30+ biomes, 14+ structures)
+- ✅ Defense system (walls, towers, patrols)
+- ✅ Potion brewing (combat, utility, defensive)
 - ✅ Combat & defense AI
 - ✅ Farming automation
 - ✅ Smart inventory management
@@ -404,6 +442,10 @@ Minecraft-Bot-Squad/
 │   │       ├── redstoneSystem.js     # Redstone contraptions
 │   │       ├── storageManager.js     # Storage management
 │   │       ├── baseExpansion.js      # Base/city expansion
+│   │       ├── villagerTradingSystem.js  # Villager trading
+│   │       ├── explorationSystem.js  # World exploration
+│   │       ├── defenseSystem.js      # Base defense
+│   │       ├── potionBrewingSystem.js  # Potion brewing
 │   │       ├── perceptionSystem.js   # Environmental awareness
 │   │       └── inventoryManager.js   # Smart inventory
 │   ├── gameProgression/

@@ -18,6 +18,10 @@ const { AdvancedBuildingSystem } = require("./src/agents/behaviors/advancedBuild
 const { RedstoneSystem } = require("./src/agents/behaviors/redstoneSystem");
 const { StorageManager } = require("./src/agents/behaviors/storageManager");
 const { BaseExpansion } = require("./src/agents/behaviors/baseExpansion");
+const { VillagerTradingSystem } = require("./src/agents/behaviors/villagerTradingSystem");
+const { ExplorationSystem } = require("./src/agents/behaviors/explorationSystem");
+const { DefenseSystem } = require("./src/agents/behaviors/defenseSystem");
+const { PotionBrewingSystem } = require("./src/agents/behaviors/potionBrewingSystem");
 const { systemOptimizer } = require("./src/utils/optimizer");
 const { teamCoordinator } = require("./src/coordination/teamCoordinator");
 
@@ -132,6 +136,18 @@ class MinecraftBotSquadPlugin {
     // Add base expansion system
     bot.baseExpansion = new BaseExpansion(bot.bot, config.name, bot.building);
 
+    // Add villager trading system
+    bot.trading = new VillagerTradingSystem(bot.bot, config.name);
+
+    // Add exploration system
+    bot.exploration = new ExplorationSystem(bot.bot, config.name);
+
+    // Add defense system
+    bot.defense = new DefenseSystem(bot.bot, config.name, bot.combat);
+
+    // Add potion brewing system
+    bot.potions = new PotionBrewingSystem(bot.bot, config.name);
+
     // Add role and priority
     bot.role = config.role;
     bot.priority = config.priority;
@@ -166,6 +182,24 @@ class MinecraftBotSquadPlugin {
         if (tasks.length > 0) {
           console.log(`[${bot.name}] Storage needs restocking: ${tasks.length} items low`);
         }
+      }
+
+      // Defense monitoring
+      if (Math.random() > 0.9) {
+        const threats = bot.defense.scanForThreats();
+        if (threats.length > 0) {
+          await bot.defense.defendArea();
+        }
+      }
+
+      // Discover villagers periodically
+      if (Math.random() > 0.97) {
+        await bot.trading.discoverVillagers();
+      }
+
+      // Exploration (occasionally)
+      if (Math.random() > 0.99) {
+        await bot.exploration.discoverCurrentBiome();
       }
 
       // Role-specific behaviors
@@ -207,9 +241,17 @@ class MinecraftBotSquadPlugin {
           break;
 
         case "redstone":
-          // Focus on automation and storage organization
+          // Focus on automation, storage, and potion brewing
           if (Math.random() > 0.97) {
             await bot.storage.organizeStorage();
+          }
+
+          // Brew potions periodically
+          if (Math.random() > 0.98) {
+            const needsHealing = bot.potions.needsMorePotions("healing");
+            if (needsHealing) {
+              await bot.potions.brewPotion("healing", 3, false, true);
+            }
           }
           break;
 
@@ -221,6 +263,29 @@ class MinecraftBotSquadPlugin {
           );
           if (foodItems.length > 10) {
             await bot.storage.depositItems(foodItems);
+          }
+
+          // Trade with farmer villagers
+          if (Math.random() > 0.98) {
+            const goal = bot.trading.getPriorityTradingGoal();
+            if (goal && goal.profession === "farmer") {
+              await bot.trading.buyItem(goal.item);
+            }
+          }
+          break;
+
+        case "exploration":
+          // Systematic world exploration
+          if (Math.random() > 0.95) {
+            const target = bot.exploration.getNextExplorationTarget();
+            if (target) {
+              await bot.exploration.exploreToTarget(target);
+            }
+          }
+
+          // Mark interesting finds
+          if (Math.random() > 0.97) {
+            await bot.exploration.scanForStructures();
           }
           break;
 
