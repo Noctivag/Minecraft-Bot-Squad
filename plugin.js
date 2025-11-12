@@ -22,6 +22,10 @@ const { VillagerTradingSystem } = require("./src/agents/behaviors/villagerTradin
 const { ExplorationSystem } = require("./src/agents/behaviors/explorationSystem");
 const { DefenseSystem } = require("./src/agents/behaviors/defenseSystem");
 const { PotionBrewingSystem } = require("./src/agents/behaviors/potionBrewingSystem");
+const { PvpCombatSystem } = require("./src/agents/behaviors/pvpCombatSystem");
+const { MinigameManager } = require("./src/agents/behaviors/minigameManager");
+const { BedwarsStrategy } = require("./src/agents/behaviors/bedwarsStrategy");
+const { HumanBehavior } = require("./src/agents/behaviors/humanBehavior");
 const { systemOptimizer } = require("./src/utils/optimizer");
 const { teamCoordinator } = require("./src/coordination/teamCoordinator");
 
@@ -148,6 +152,18 @@ class MinecraftBotSquadPlugin {
     // Add potion brewing system
     bot.potions = new PotionBrewingSystem(bot.bot, config.name);
 
+    // Add PvP combat system
+    bot.pvp = new PvpCombatSystem(bot.bot, config.name);
+
+    // Add minigame manager
+    bot.minigames = new MinigameManager(bot.bot, config.name);
+
+    // Add Bedwars strategy
+    bot.bedwars = new BedwarsStrategy(bot.bot, config.name, bot.pvp);
+
+    // Add human behavior emulation
+    bot.human = new HumanBehavior(bot.bot, config.name);
+
     // Add role and priority
     bot.role = config.role;
     bot.priority = config.priority;
@@ -170,6 +186,29 @@ class MinecraftBotSquadPlugin {
     bot.autonomousTick = async function() {
       // Call original tick
       await originalTick();
+
+      // Minigame detection and handling
+      const minigame = bot.minigames.detectMinigame();
+      if (minigame && bot.minigames.isInMinigame()) {
+        // Apply human behavior
+        await bot.human.maybeHesitate();
+        await bot.human.checkInventory();
+
+        // Execute minigame-specific strategy
+        if (minigame === "bedwars") {
+          await bot.bedwars.execute();
+        } else {
+          await bot.minigames.executeMinigameStrategy();
+        }
+
+        // PvP combat if enemy detected
+        const enemy = bot.pvp.selectTarget();
+        if (enemy) {
+          await bot.pvp.attackTarget(enemy);
+        }
+
+        return; // Don't run regular behaviors in minigame mode
+      }
 
       // Auto-detect achievement completions
       if (Math.random() > 0.9) {

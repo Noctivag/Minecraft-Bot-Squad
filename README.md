@@ -104,6 +104,44 @@ Auto-brew potions for any situation:
 - **Extended & Upgraded**: Brew extended duration and level II potions
 - **Auto-Restocking**: Maintains minimum stock of essential potions
 
+### ⚔️ Advanced PvP Combat
+Human-like player vs player combat:
+- **Combat Techniques**: W-tapping, strafing, block-hitting, critical hits
+- **Weapon Mastery**: Bow spam, fishing rod combos, sword combos
+- **Strategic Movement**: Aggressive, defensive, balanced, hit-and-run modes
+- **Combo Tracking**: Track consecutive hits (3+ hit combos!)
+- **Emergency Tactics**: Ender pearl escapes when low health
+- **Target Selection**: Smart enemy prioritization by health and distance
+
+### 🎮 Minigame Support
+Play Minecraft minigames like a pro:
+- **Auto-Detection**: Detect Bedwars, Skywars, UHC, The Bridge, and more
+- **7+ Game Modes**: Bedwars, Skywars, SkyBlock, The Bridge, Build Battle, Murder Mystery, UHC
+- **Team Recognition**: Auto-detect team color and teammates
+- **Objective Tracking**: Understand and execute game objectives
+- **Stats Tracking**: Wins, losses, K/D, win rate per minigame
+
+### 🛏️ Bedwars Master
+Complete Bedwars gameplay:
+- **4 Strategy Modes**: Defensive, Balanced, Aggressive, Rusher
+- **Bed Defense**: Build wool/endstone protection, upgrade defenses
+- **Resource Management**: Auto-collect iron, gold, diamond, emerald
+- **Smart Shopping**: Buy gear, blocks, and upgrades from shop
+- **Rushing**: Execute rapid bed destruction strategies
+- **Base Defense**: Protect bed from enemy attacks
+- **Phase Awareness**: Early, mid, late game strategies
+
+### 🎭 Human-Like Behavior
+Bots act like real players:
+- **Reaction Time**: 150-350ms realistic delays
+- **Accuracy**: 70-95% accuracy with occasional misses
+- **Personality Traits**: Aggressive, Cautious, Strategic, Impulsive, Patient
+- **Natural Movement**: Smooth mouse movements with jitter
+- **Human Habits**: Check inventory, tab list, occasional hesitation
+- **Fatigue System**: Performance decreases over long sessions
+- **Mistakes**: 2-8% mistake rate for realism
+- **Varied Playstyle**: Each bot has unique personality
+
 ### 🧠 Intelligent AI
 - Rule-based decision making (no LLM!)
 - Priority-based actions
@@ -403,6 +441,10 @@ new MinecraftBotSquadPlugin({
 - ✅ World exploration (30+ biomes, 14+ structures)
 - ✅ Defense system (walls, towers, patrols)
 - ✅ Potion brewing (combat, utility, defensive)
+- ✅ **Advanced PvP combat (combos, techniques)**
+- ✅ **Minigame support (7+ game modes)**
+- ✅ **Bedwars mastery (complete strategies)**
+- ✅ **Human behavior emulation (realistic play)**
 - ✅ Combat & defense AI
 - ✅ Farming automation
 - ✅ Smart inventory management
@@ -446,6 +488,10 @@ Minecraft-Bot-Squad/
 │   │       ├── explorationSystem.js  # World exploration
 │   │       ├── defenseSystem.js      # Base defense
 │   │       ├── potionBrewingSystem.js  # Potion brewing
+│   │       ├── pvpCombatSystem.js    # PvP combat
+│   │       ├── minigameManager.js    # Minigame detection
+│   │       ├── bedwarsStrategy.js    # Bedwars gameplay
+│   │       ├── humanBehavior.js      # Human emulation
 │   │       ├── perceptionSystem.js   # Environmental awareness
 │   │       └── inventoryManager.js   # Smart inventory
 │   ├── gameProgression/
