@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft Bot Squad</title>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1>🤖 Minecraft Bot Squad</h1>
+        <span class="version">v3.0 Professional Edition</span>
+      </div>
+      <div class="header-right">
+        <button id="settingsBtn" class="btn btn-secondary">⚙️ Settings</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Control Panel -->
+      <section class="control-panel">
+        <div class="server-info" id="serverInfo">
+          <div class="info-item">
+            <span class="label">Server:</span>
+            <span class="value" id="serverHost">localhost:25565</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Status:</span>
+            <span class="value status-badge" id="serverStatus">Not Connected</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Bots Active:</span>
+            <span class="value" id="botsActive">0 / 8</span>
+          </div>
+        </div>
+
+        <div class="control-buttons">
+          <button id="startAllBtn" class="btn btn-primary btn-large">▶️ Start All Bots</button>
+          <button id="stopAllBtn" class="btn btn-danger btn-large" disabled>⏹️ Stop All Bots</button>
+        </div>
+      </section>
+
+      <!-- Bot Grid -->
+      <section class="bot-grid" id="botGrid">
+        <!-- Bot cards will be inserted here -->
+      </section>
+
+      <!-- Logs Panel -->
+      <section class="logs-panel">
+        <div class="logs-header">
+          <h3>📋 Activity Logs</h3>
+          <div class="logs-controls">
+            <select id="logFilter" class="select-input">
+              <option value="all">All Bots</option>
+            </select>
+            <button id="clearLogsBtn" class="btn btn-small">Clear</button>
+            <button id="exportLogsBtn" class="btn btn-small">Export</button>
+          </div>
+        </div>
+        <div class="logs-content" id="logsContent">
+          <div class="log-entry log-info">
+            <span class="log-time">00:00:00</span>
+            <span class="log-message">Minecraft Bot Squad initialized. Ready to start bots.</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>Autonomous Minecraft Bot Squad | Features: Combat, Building, Mining, Trading, PvP, Minigames & More</span>
+    </footer>
+  </div>
+
+  <script src="../scripts/dashboard.js"></script>
+</body>
+</html>
