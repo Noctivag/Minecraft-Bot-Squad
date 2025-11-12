@@ -4,7 +4,7 @@ This document describes the advanced features that take the Minecraft Bot Squad 
 
 ## 🎯 Overview
 
-The enhanced bot system includes **8 major upgrades**:
+The enhanced bot system includes **8 major upgrades** with **intelligent rule-based AI** (NO LLM required!):
 
 1. **Team Coordination System** - Multi-bot task delegation and coordination
 2. **Combat & Defense** - Self-defense, mob hunting, and team protection
@@ -14,6 +14,7 @@ The enhanced bot system includes **8 major upgrades**:
 6. **Inventory Management** - Smart storage, sorting, and item management
 7. **Real-time Coordination** - Instant bot-to-bot communication
 8. **Enhanced Agent System** - Unified interface for all advanced features
+9. **Rule-Based Intelligence** - Smart decision-making without LLM (fast, free, reliable!)
 
 ---
 
@@ -439,6 +440,69 @@ const squad = await createEnhancedSquad({
 - Opportunity detection and action
 - Heartbeat updates
 - Status reporting
+
+---
+
+### 9. Rule-Based Intelligence
+
+**File:** `src/agents/ruleBasedBrain.js`
+
+Intelligent decision-making without requiring LLM:
+
+```javascript
+const { RuleBasedBrain } = require("./src/agents/ruleBasedBrain");
+
+const brain = new RuleBasedBrain(bot, "Alex", ["mining", "combat"]);
+
+// Brain automatically analyzes state and makes decisions
+const decision = await brain.makeDecision(
+  perception,
+  inventory,
+  combat,
+  farming,
+  building
+);
+
+// Returns intelligent actions like:
+// - "retreat" when in danger
+// - "mine" when resources nearby
+// - "eat" when hungry
+// - "combat" when threats detected
+// - "explore" when idle
+
+// Set goals
+brain.setGoal("Collect 10 iron ore", 8);
+
+// Get current goal
+const goal = brain.getGoal();
+```
+
+**Features:**
+- Priority-based decision tree (Survival > Maintenance > Defense > Tasks > Opportunities)
+- State analysis (health, hunger, danger, inventory, position)
+- Capability-based behavior (miners mine, fighters fight)
+- Context-aware decisions (adapts to current situation)
+- Goal tracking and completion
+- Instant decisions (< 1ms, no API calls)
+- Zero cost (no LLM fees)
+- Works offline
+
+**Decision Priority System:**
+1. **SURVIVAL** (10) - Critical health or danger → retreat and heal
+2. **MAINTENANCE** (8) - Hunger or full inventory → eat or deposit
+3. **DEFENSE** (7) - Threats nearby → fight or request help
+4. **TASKS** (6) - Assigned work → execute team tasks
+5. **OPPORTUNITIES** (5) - Resources available → mine, farm, loot
+6. **IDLE** (1-3) - Nothing urgent → explore, wander, maintain
+
+**Why No LLM?**
+- ⚡ **Faster**: Instant decisions vs 1-5 second API calls
+- 💰 **Free**: No API costs
+- 🎯 **Consistent**: Predictable, deterministic behavior
+- 🔒 **Offline**: Works without internet
+- 📈 **Scalable**: Can run many more bots simultaneously
+
+See [NO_LLM_GUIDE.md](NO_LLM_GUIDE.md) for complete details!
 
 ---
 

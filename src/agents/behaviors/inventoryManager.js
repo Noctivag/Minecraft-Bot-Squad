@@ -332,6 +332,40 @@ class InventoryManager {
   }
 
   /**
+   * Try to eat food to restore health/hunger
+   */
+  async tryEat() {
+    const foods = [
+      "cooked_beef", "cooked_porkchop", "cooked_chicken", "cooked_mutton",
+      "bread", "apple", "golden_apple", "carrot", "potato", "beetroot",
+      "cooked_cod", "cooked_salmon", "baked_potato"
+    ];
+
+    for (const foodName of foods) {
+      const food = this.bot.inventory.items().find(item => item.name === foodName);
+      if (food) {
+        try {
+          await this.bot.equip(food, "hand");
+          await this.bot.consume();
+          console.log(`[${this.agentName}] Ate ${foodName}`);
+
+          logEvent(this.agentName, "inventory", {
+            action: "eat",
+            food: foodName
+          });
+
+          return true;
+        } catch (err) {
+          console.error(`[${this.agentName}] Failed to eat ${foodName}:`, err.message);
+        }
+      }
+    }
+
+    console.log(`[${this.agentName}] No food available to eat`);
+    return false;
+  }
+
+  /**
    * Scan nearby chests and register them
    */
   async scanAndRegisterChests(radius = 32) {

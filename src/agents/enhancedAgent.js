@@ -1,14 +1,16 @@
 /**
  * Enhanced Agent - Next-level bot with all advanced systems integrated
+ * Uses rule-based intelligence - NO LLM required!
  */
 
 const mineflayer = require("mineflayer");
-const { pathfinder } = require("mineflayer-pathfinder");
+const { pathfinder, goals } = require("mineflayer-pathfinder");
 const { CombatSystem } = require("./behaviors/combatSystem");
 const { FarmingSystem } = require("./behaviors/farmingSystem");
 const { BuildingSystem } = require("./behaviors/buildingSystem");
 const { PerceptionSystem } = require("./behaviors/perceptionSystem");
 const { InventoryManager } = require("./behaviors/inventoryManager");
+const { RuleBasedBrain } = require("./ruleBasedBrain");
 const { teamCoordinator } = require("../coordination/teamCoordinator");
 const { realtimeCoordinator } = require("../coordination/realtimeCoordinator");
 const { logEvent } = require("../memory/store");
@@ -57,6 +59,7 @@ async function createEnhancedAgent(config) {
   const building = new BuildingSystem(bot, name);
   const perception = new PerceptionSystem(bot, name);
   const inventory = new InventoryManager(bot, name);
+  const brain = new RuleBasedBrain(bot, name, capabilities);
 
   // Register with coordinators
   teamCoordinator.registerBot(name, bot, capabilities);
@@ -74,6 +77,7 @@ async function createEnhancedAgent(config) {
     building,
     perception,
     inventory,
+    brain,
 
     // Convenience methods
     async executeTask(taskId) {
@@ -205,7 +209,7 @@ async function createEnhancedAgent(config) {
       };
     },
 
-    // Autonomous behavior loop
+    // Autonomous behavior loop with intelligent decision-making
     async autonomousTick() {
       // Update heartbeat
       realtimeCoordinator.heartbeat(name);
@@ -214,37 +218,124 @@ async function createEnhancedAgent(config) {
         health: bot.health
       });
 
-      // Check for assigned tasks
+      // Check for assigned tasks first
       const botData = teamCoordinator.bots.get(name);
       if (botData?.currentTask) {
         await this.executeTask(botData.currentTask);
         return;
       }
 
-      // Auto-deposit if inventory full
-      if (inventory.isInventoryFull()) {
-        await inventory.autoDeposit();
-      }
+      // Let the brain decide what to do
+      const decision = await brain.makeDecision(
+        perception,
+        inventory,
+        combat,
+        farming,
+        building
+      );
 
-      // Check for danger
-      const summary = perception.getSummary();
-      if (summary.dangerLevel > 30) {
-        // Combat mode
-        if (combat.combatMode !== "passive") {
-          console.log(`[${name}] Danger detected (level ${summary.dangerLevel}), entering combat mode`);
+      // Execute the brain's decision
+      await this.executeDecision(decision);
+    },
+
+    // Execute a decision from the brain
+    async executeDecision(decision) {
+      try {
+        switch (decision.action) {
+          case "wait":
+            // Do nothing
+            break;
+
+          case "eat":
+            await inventory.tryEat();
+            break;
+
+          case "retreat":
+            if (decision.target) {
+              console.log(`[${name}] Retreating to safety`);
+              await bot.pathfinder.goto(new goals.GoalBlock(
+                decision.target.x,
+                decision.target.y,
+                decision.target.z
+              ));
+            }
+            break;
+
+          case "deposit":
+            await inventory.depositItems();
+            break;
+
+          case "combat_mode":
+            combat.setCombatMode(decision.mode);
+            break;
+
+          case "combat":
+            // Combat system handles this automatically
+            break;
+
+          case "request_help":
+            this.requestHelp(decision.reason, decision.urgency);
+            break;
+
+          case "execute_task":
+            await this.executeTask(decision.taskId);
+            break;
+
+          case "mine":
+            if (decision.resource) {
+              await this.mineResource(decision.resource);
+            }
+            break;
+
+          case "farm_collect":
+            if (decision.animal) {
+              await farming.collectProducts(decision.animal === "chicken" ? "egg" : "milk");
+            }
+            break;
+
+          case "loot":
+            console.log(`[${name}] Looking for loot`);
+            // Would implement chest looting here
+            break;
+
+          case "explore":
+            if (decision.direction) {
+              console.log(`[${name}] Exploring`);
+              await bot.pathfinder.goto(new goals.GoalNear(
+                decision.direction.x,
+                decision.direction.y,
+                decision.direction.z,
+                5
+              )).catch(() => {});
+            }
+            break;
+
+          case "wander":
+            if (decision.direction) {
+              await bot.pathfinder.goto(new goals.GoalNear(
+                decision.direction.x,
+                decision.direction.y,
+                decision.direction.z,
+                3
+              )).catch(() => {});
+            }
+            break;
+
+          case "farm_check":
+            console.log(`[${name}] Checking farms`);
+            // Would check farm status here
+            break;
+
+          case "build_plan":
+            console.log(`[${name}] Planning construction`);
+            // Would plan building here
+            break;
+
+          default:
+            console.log(`[${name}] Unknown action: ${decision.action}`);
         }
-      } else {
-        // Look for opportunities
-        const opportunities = perception.detectOpportunities();
-
-        if (opportunities.length > 0) {
-          const opp = opportunities[0];
-
-          if (opp.type === "mining" && capabilities.includes("mining")) {
-            // Mine nearby resource
-            await this.mineResource(opp.resource);
-          }
-        }
+      } catch (err) {
+        console.error(`[${name}] Decision execution error:`, err.message);
       }
     },
 
