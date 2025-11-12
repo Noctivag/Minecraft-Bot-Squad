@@ -13,8 +13,11 @@
 const { createEnhancedAgent } = require("./src/agents/enhancedAgent");
 const { EndGameSystem } = require("./src/gameProgression/endGameSystem");
 const { ItemCollectionSystem } = require("./src/gameProgression/itemCollectionSystem");
+const { AchievementSystem } = require("./src/gameProgression/achievementSystem");
 const { AdvancedBuildingSystem } = require("./src/agents/behaviors/advancedBuildingSystem");
 const { RedstoneSystem } = require("./src/agents/behaviors/redstoneSystem");
+const { StorageManager } = require("./src/agents/behaviors/storageManager");
+const { BaseExpansion } = require("./src/agents/behaviors/baseExpansion");
 const { systemOptimizer } = require("./src/utils/optimizer");
 const { teamCoordinator } = require("./src/coordination/teamCoordinator");
 
@@ -114,11 +117,20 @@ class MinecraftBotSquadPlugin {
     // Add item collection system
     bot.itemCollection = new ItemCollectionSystem(bot.bot, config.name);
 
+    // Add achievement tracking system
+    bot.achievements = new AchievementSystem(bot.bot, config.name);
+
     // Replace building system with advanced version
     bot.building = new AdvancedBuildingSystem(bot.bot, config.name);
 
     // Add redstone system
     bot.redstone = new RedstoneSystem(bot.bot, config.name);
+
+    // Add storage management system
+    bot.storage = new StorageManager(bot.bot, config.name);
+
+    // Add base expansion system
+    bot.baseExpansion = new BaseExpansion(bot.bot, config.name, bot.building);
 
     // Add role and priority
     bot.role = config.role;
@@ -143,34 +155,86 @@ class MinecraftBotSquadPlugin {
       // Call original tick
       await originalTick();
 
+      // Auto-detect achievement completions
+      if (Math.random() > 0.9) {
+        bot.achievements.autoDetectCompletions();
+      }
+
+      // Check and restock storage periodically
+      if (Math.random() > 0.95) {
+        const tasks = await bot.storage.getRestockingTasks();
+        if (tasks.length > 0) {
+          console.log(`[${bot.name}] Storage needs restocking: ${tasks.length} items low`);
+        }
+      }
+
       // Role-specific behaviors
       switch (bot.priority) {
         case "game_progression":
+          // Game progression and achievements
           await bot.endGame.assessGameStage();
           const milestone = bot.endGame.getNextMilestone();
           if (milestone) {
             console.log(`[${bot.name}] Next milestone: ${milestone.id}`);
           }
+
+          // Work on achievements
+          const achievement = bot.achievements.getPriorityAchievement();
+          if (achievement && Math.random() > 0.98) {
+            console.log(`[${bot.name}] Working on: ${achievement.name}`);
+          }
           break;
 
         case "collection":
+          // Item collection
           bot.itemCollection.updateCollectedItems();
           const nextItem = bot.itemCollection.getNextItemGoal();
           if (nextItem && Math.random() > 0.95) {
             console.log(`[${bot.name}] Targeting: ${nextItem.item}`);
           }
+
+          // Deposit excess items to storage
+          if (bot.bot.inventory.items().length > 30) {
+            await bot.storage.depositItems();
+          }
           break;
 
         case "building":
-          // Focus on building tasks
+          // Base expansion
+          if (Math.random() > 0.98) {
+            await bot.baseExpansion.autoExpand();
+          }
           break;
 
         case "redstone":
-          // Focus on automation
+          // Focus on automation and storage organization
+          if (Math.random() > 0.97) {
+            await bot.storage.organizeStorage();
+          }
           break;
 
         case "farming":
           // Already handled by farming system
+          // But also manage food storage
+          const foodItems = bot.bot.inventory.items().filter(i =>
+            i.name.includes("cooked") || i.name.includes("bread")
+          );
+          if (foodItems.length > 10) {
+            await bot.storage.depositItems(foodItems);
+          }
+          break;
+
+        case "decoration":
+          // Build decorative elements
+          if (Math.random() > 0.98) {
+            const decorativePlots = Array.from(bot.baseExpansion.cityGrid.values())
+              .filter(p => !p.occupied && p.district === "decorative");
+
+            if (decorativePlots.length > 0) {
+              const plot = decorativePlots[0];
+              await bot.baseExpansion.buildStructureAtPlot("fountain", plot);
+            }
+          }
           break;
       }
     };
@@ -335,6 +399,146 @@ class MinecraftBotSquadPlugin {
   }
 
   /**
+   * Command: Initialize base at location
+   */
+  async initializeBase(botName, position = null) {
+    const bot = this.bots.find(b => b.name === botName);
+    if (!bot) {
+      console.log(`Bot ${botName} not found`);
+      return false;
+    }
+
+    console.log(`[${botName}] Initializing base...`);
+    const baseCenter = await bot.baseExpansion.initializeBase(position);
+
+    // Discover storage in area
+    await bot.storage.discoverStorage(baseCenter);
+
+    console.log(`[${botName}] Base initialized at ${baseCenter.x}, ${baseCenter.y}, ${baseCenter.z}`);
+    return baseCenter;
+  }
+
+  /**
+   * Command: Expand base
+   */
+  async expandBase(botName) {
+    const bot = this.bots.find(b => b.name === botName);
+    if (!bot) {
+      console.log(`Bot ${botName} not found`);
+      return false;
+    }
+
+    console.log(`[${botName}] Executing base expansion...`);
+    return await bot.baseExpansion.executeExpansionPhase();
+  }
+
+  /**
+   * Command: Show achievements
+   */
+  showAchievements(botName = null) {
+    if (botName) {
+      const bot = this.bots.find(b => b.name === botName);
+      if (bot) {
+        this.printAchievements(bot);
+      }
+    } else {
+      // Show achievements from leader bot
+      const leader = this.bots.find(b => b.priority === "game_progression");
+      if (leader) {
+        this.printAchievements(leader);
+      }
+    }
+  }
+
+  /**
+   * Print achievement progress
+   */
+  printAchievements(bot) {
+    const stats = bot.achievements.getStats();
+
+    console.log("\n" + "=".repeat(70));
+    console.log("  🏆 ACHIEVEMENT PROGRESS");
+    console.log("=".repeat(70));
+    console.log(`\nOverall: ${stats.completed}/${stats.total} (${stats.percent}%)\n`);
+
+    for (const [category, data] of Object.entries(stats.byCategory)) {
+      const percent = ((data.completed / data.total) * 100).toFixed(0);
+      console.log(`${category.toUpperCase()}: ${data.completed}/${data.total} (${percent}%)`);
+    }
+
+    console.log("\nNext to complete:");
+    const next = bot.achievements.getNextAchievement();
+    if (next) {
+      console.log(`  📌 ${next.name}`);
+      console.log(`     ${next.description}`);
+    }
+
+    console.log("=".repeat(70) + "\n");
+  }
+
+  /**
+   * Command: Show storage status
+   */
+  async showStorage(botName = null) {
+    const bot = botName ? this.bots.find(b => b.name === botName) : this.bots[0];
+    if (!bot) {
+      console.log("No bots available");
+      return;
+    }
+
+    console.log("\n" + "=".repeat(70));
+    console.log("  📦 STORAGE STATUS");
+    console.log("=".repeat(70));
+
+    const stockLevels = await bot.storage.checkStockLevels();
+    if (!stockLevels) {
+      console.log("\nStorage check on cooldown...\n");
+      return;
+    }
+
+    for (const [category, items] of Object.entries(stockLevels)) {
+      console.log(`\n${category.toUpperCase()}:`);
+
+      for (const [itemName, status] of Object.entries(items)) {
+        const statusIcon = status.status === "stocked" ? "✅" :
+                          status.status === "low" ? "⚠️" : "❌";
+
+        console.log(`  ${statusIcon} ${itemName}: ${status.current}/${status.ideal}`);
+      }
+    }
+
+    console.log("\n" + "=".repeat(70) + "\n");
+  }
+
+  /**
+   * Command: Show base expansion progress
+   */
+  showBaseProgress(botName = null) {
+    const bot = botName ? this.bots.find(b => b.name === botName) :
+                         this.bots.find(b => b.priority === "building");
+
+    if (!bot) {
+      console.log("No builder bot available");
+      return;
+    }
+
+    const progress = bot.baseExpansion.getProgress();
+
+    console.log("\n" + "=".repeat(70));
+    console.log("  🏗️  BASE EXPANSION PROGRESS");
+    console.log("=".repeat(70));
+    console.log(`\nPhase: ${progress.currentPhase}/${progress.totalPhases} (${progress.completionPercent}%)`);
+    console.log(`Structures Built: ${progress.structuresBuilt}`);
+
+    console.log("\nDistricts:");
+    for (const district of progress.districts) {
+      console.log(`  ${district.name}: ${district.structures.length} structures`);
+    }
+
+    console.log("=".repeat(70) + "\n");
+  }
+
+  /**
    * Stop all bots
    */
   async shutdown() {
@@ -393,6 +597,29 @@ if (require.main === module) {
         plugin.listRedstone();
       } else if (command === "status") {
         console.log(plugin.getStatus());
+      } else if (command === "achievements") {
+        plugin.showAchievements();
+      } else if (command === "storage") {
+        await plugin.showStorage();
+      } else if (command === "base") {
+        plugin.showBaseProgress();
+      } else if (command === "expand") {
+        const builder = plugin.bots.find(b => b.priority === "building");
+        if (builder) {
+          await plugin.expandBase(builder.name);
+        }
+      } else if (command === "help") {
+        console.log("\n📋 Available Commands:");
+        console.log("  progress      - Show bot progress");
+        console.log("  achievements  - Show achievement progress");
+        console.log("  storage       - Show storage status");
+        console.log("  base          - Show base expansion progress");
+        console.log("  buildings     - List available buildings");
+        console.log("  redstone      - List redstone contraptions");
+        console.log("  expand        - Execute next base expansion phase");
+        console.log("  status        - Show plugin status");
+        console.log("  help          - Show this help message");
+        console.log("  Ctrl+C        - Shutdown\n");
       }
     });
 

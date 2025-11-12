@@ -15,6 +15,7 @@
 - ✅ **Defeat the Ender Dragon**
 - ✅ Fight the Wither boss
 - ✅ Get Elytra and complete post-game
+- ✅ **Complete ALL Achievements** (50+ tracked)
 
 ### 💎 Collect ALL Items (600+)
 Track and obtain every single item in Minecraft:
@@ -34,6 +35,22 @@ Not just functional - **aesthetic** designs:
 - **Decorative**: Fountains, bridges, lighthouses
 - **Infrastructure**: Pathways, walls, gates
 
+### 🏙️ Build & Expand Cities
+Autonomous base building and city development:
+- **City Planning**: Organized grid system with districts
+- **5 Expansion Phases**: Foundation → Industrial → Residential → Advanced → Mega City
+- **Districts**: Residential, Industrial, Farming, Commercial, Decorative
+- **Infrastructure**: Roads, lighting systems, protective walls, gardens
+- **Auto-Expansion**: Automatically grows as resources accumulate
+
+### 📦 Smart Storage Management
+Keep your base fully stocked:
+- **Auto-Stocking**: Maintains ideal levels of 50+ essential items
+- **7 Categories**: Food, Tools, Combat, Building, Redstone, Resources, Farming, Utility
+- **Organization**: Automatically sorts items into proper chests
+- **Restocking Plans**: Identifies what to mine, craft, or gather
+- **Low Stock Alerts**: Notifies when supplies are running low
+
 ### ⚙️ Create Redstone Contraptions
 Full automation systems:
 - Item sorters
@@ -44,6 +61,14 @@ Full automation systems:
 - Water elevators
 - Animal farms
 - Lighting systems
+
+### 🏆 Achievement Tracking
+Complete all Minecraft achievements:
+- **50+ Achievements**: Story, Nether, End, Adventure, Husbandry
+- **Auto-Detection**: Automatically detects completed achievements
+- **Action Plans**: Step-by-step guides to complete each achievement
+- **Priority System**: Works on achievements in optimal order
+- **Progress Tracking**: Track completion by category
 
 ### 🧠 Intelligent AI
 - Rule-based decision making (no LLM!)
@@ -253,15 +278,25 @@ Highly optimized for efficiency:
 
 ```bash
 # In console
-progress    # Show progress
-buildings   # List blueprints
-redstone    # List contraptions
-status      # Show status
+progress      # Show bot progress
+achievements  # Show achievement progress
+storage       # Show storage status
+base          # Show base expansion progress
+buildings     # List blueprints
+redstone      # List contraptions
+expand        # Execute next base expansion phase
+status        # Show plugin status
+help          # Show all commands
 
 # Via API
 plugin.showProgress()
+plugin.showAchievements()
+plugin.showStorage()
+plugin.showBaseProgress()
 plugin.listBuildings()
 plugin.listRedstone()
+plugin.initializeBase(botName, pos)
+plugin.expandBase(botName)
 plugin.assignTask(bot, task, data)
 plugin.buildStructure(bot, type, pos)
 plugin.buildRedstone(bot, type, pos)
@@ -325,8 +360,11 @@ new MinecraftBotSquadPlugin({
 - ✅ 8 specialized bot roles
 - ✅ 15+ building blueprints
 - ✅ 10+ redstone contraptions
-- ✅ Game progression system
+- ✅ Game progression system (6 stages)
 - ✅ Item collection (600+ items)
+- ✅ Achievement tracking (50+ achievements)
+- ✅ Storage management (auto-stocking)
+- ✅ Base/city expansion (5 phases)
 - ✅ Combat & defense AI
 - ✅ Farming automation
 - ✅ Smart inventory management
@@ -353,15 +391,36 @@ See [PLUGIN_GUIDE.md](PLUGIN_GUIDE.md) for complete documentation.
 
 ```
 Minecraft-Bot-Squad/
-├── plugin.js                     # Main plugin
+├── plugin.js                          # Main plugin
 ├── src/
-│   ├── agents/                   # Bot AI systems
-│   ├── gameProgression/          # Game stages & item collection
-│   ├── coordination/             # Team coordination
-│   ├── utils/                    # Optimization tools
-│   └── config/                   # Configuration
-├── examples/                     # Usage examples
-└── docs/                         # Documentation
+│   ├── agents/
+│   │   ├── enhancedAgent.js          # Enhanced bot with all systems
+│   │   ├── ruleBasedBrain.js         # Intelligent AI (no LLM)
+│   │   └── behaviors/
+│   │       ├── combatSystem.js       # Combat & defense
+│   │       ├── farmingSystem.js      # Farming automation
+│   │       ├── buildingSystem.js     # Basic building
+│   │       ├── advancedBuildingSystem.js  # Beautiful structures
+│   │       ├── redstoneSystem.js     # Redstone contraptions
+│   │       ├── storageManager.js     # Storage management
+│   │       ├── baseExpansion.js      # Base/city expansion
+│   │       ├── perceptionSystem.js   # Environmental awareness
+│   │       └── inventoryManager.js   # Smart inventory
+│   ├── gameProgression/
+│   │   ├── endGameSystem.js          # Game progression
+│   │   ├── itemCollectionSystem.js   # Item tracking
+│   │   └── achievementSystem.js      # Achievement tracking
+│   ├── coordination/
+│   │   ├── teamCoordinator.js        # Task delegation
+│   │   └── realtimeCoordinator.js    # Bot communication
+│   ├── utils/
+│   │   ├── performanceMonitor.js     # Performance tracking
+│   │   ├── cache.js                  # Caching system
+│   │   └── optimizer.js              # Auto-optimization
+│   └── config/
+│       └── optimizations.js          # Configuration
+├── examples/                          # Usage examples
+└── docs/                              # Documentation
 ```
 
 ---
