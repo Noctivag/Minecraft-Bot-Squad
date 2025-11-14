@@ -19,16 +19,39 @@
 
 ## 🚀 Quick Start
 
+### Variante 1: Als CLI-Tool (Empfohlen)
+
 ```bash
 # Installation
 npm install
-npm run migrate
+npm link
+
+# Starte mit einem Kommando!
+mcbot-squad start
+
+# Oder starte Web UI
+mcbot-squad ui
+
+# Oder starte enhanced Squad
+mcbot-squad enhanced
+```
+
+### Variante 2: Direkt mit Node.js
+
+```bash
+# Installation
+npm install
 
 # Starte massiv erweiterte Bot-Squad
 node examples/massivelyEnhancedSquad.js
+
+# Oder starte Web UI
+npm start
 ```
 
 **Das war's!** 6 Bots mit verschiedenen Rollen starten und arbeiten autonom.
+
+📖 **Vollständige Installationsanleitung:** siehe [INSTALLATION.md](INSTALLATION.md)
 
 ## 📋 Features
 

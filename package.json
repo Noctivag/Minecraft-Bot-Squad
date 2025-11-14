@@ -3,6 +3,9 @@
   "version": "2.0.0",
   "description": "Advanced Minecraft bot squad with management UI",
   "main": "index.js",
+  "bin": {
+    "mcbot-squad": "./bin/cli.js"
+  },
   "scripts": {
     "start": "node examples/withUI.js",
     "ui": "node examples/withUI.js",
@@ -13,17 +16,19 @@
     "minecraft",
     "bot",
     "mineflayer",
-    "automation"
+    "automation",
+    "cli"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "commander": "^11.1.0",
     "express": "^4.18.2",
-    "ws": "^8.14.2",
     "mineflayer": "^4.17.0",
     "mineflayer-pathfinder": "^2.4.3",
     "prismarine-viewer": "^1.24.0",
-    "vec3": "^0.1.8"
+    "vec3": "^0.1.8",
+    "ws": "^8.14.2"
   },
   "devDependencies": {
     "eslint": "^8.50.0"
