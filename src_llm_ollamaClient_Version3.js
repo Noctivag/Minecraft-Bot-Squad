@@ -1,8 +1,13 @@
 const base = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 const MODEL = process.env.OLLAMA_MODEL || "llama3.1:8b-instruct";
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL || "nomic-embed-text";
+const OLLAMA_ENABLED = process.env.OLLAMA_ENABLED !== "false";
 
 async function generate({ prompt, system, stop, temperature = 0.3, max_tokens = 1024 }) {
+  if (!OLLAMA_ENABLED) {
+    console.warn("[LLM] Ollama deaktiviert - verwende Fallback-Logik");
+    return "";
+  }
   const res = await fetch(`${base}/api/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -19,6 +24,11 @@ async function generate({ prompt, system, stop, temperature = 0.3, max_tokens = 
 }
 
 async function embed(texts) {
+  if (!OLLAMA_ENABLED) {
+    console.warn("[LLM] Ollama deaktiviert - keine Embeddings verfügbar");
+    const arr = Array.isArray(texts) ? texts : [texts];
+    return arr.map(() => []);
+  }
   const arr = Array.isArray(texts) ? texts : [texts];
   const res = await fetch(`${base}/api/embeddings`, {
     method: "POST",
@@ -32,4 +42,4 @@ async function embed(texts) {
   return [];
 }
 
-module.exports = { generate, embed };
+module.exports = { generate, embed, OLLAMA_ENABLED };

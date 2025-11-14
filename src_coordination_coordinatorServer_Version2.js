@@ -1,6 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
-const { generateContentLimited } = require("../llm/geminiClient");
+const { generateContentLimited, LLM_ENABLED } = require("../llm/geminiClient");
 const {
   buildInspirationPrompt,
   buildStrategyPrompt,
@@ -13,7 +13,7 @@ function createCoordinatorServer() {
   const app = express();
   app.use(express.json({ limit: "1mb" }));
 
-  app.get("/healthz", (_req, res) => res.json({ ok: true }));
+  app.get("/healthz", (_req, res) => res.json({ ok: true, llm_enabled: LLM_ENABLED }));
 
   // Raw prompt passthrough (enforced rate limit)
   app.post("/llm/raw", async (req, res) => {

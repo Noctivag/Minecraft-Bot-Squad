@@ -1,4 +1,4 @@
-const { generate } = require("../llm/ollamaClient");
+const { generate, OLLAMA_ENABLED } = require("../llm/ollamaClient");
 const { getCurrentPolicy, patchPolicy } = require("./policyStore");
 const { buildReflectionPrompt } = require("./reflectionPrompt");
 const Database = require("better-sqlite3");
@@ -26,6 +26,11 @@ function getPerfSnapshot(agent, minutes = 60) {
 }
 
 async function reflectAndPatch(agent) {
+  if (!OLLAMA_ENABLED) {
+    console.warn(`[${agent}] LLM nicht verfügbar - überspringe Reflection`);
+    return { ok: false, error: "llm_disabled", message: "Ollama nicht verfügbar" };
+  }
+
   const current = getCurrentPolicy(agent);
   const perf = getPerfSnapshot(agent, 60);
 
