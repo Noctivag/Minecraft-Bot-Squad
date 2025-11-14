@@ -1,5 +1,6 @@
 /**
  * Enhanced Agent - Next-level bot with all advanced systems integrated
+ * Now includes: Server network support, authentication, improved reconnection, and logging
  */
 
 const mineflayer = require("mineflayer");
@@ -13,6 +14,13 @@ const { teamCoordinator } = require("../coordination/teamCoordinator");
 const { realtimeCoordinator } = require("../coordination/realtimeCoordinator");
 const { logEvent } = require("../memory/store");
 const { attachAgentRuntime } = require("./agentRuntime");
+const {
+  createLogger,
+  attachServerNetwork,
+  setupReconnect,
+  createSecureBotConfig,
+  AuthType
+} = require("../bot");
 
 /**
  * Create an enhanced bot with all next-level features
@@ -23,27 +31,63 @@ async function createEnhancedAgent(config) {
     host = "localhost",
     port = 25565,
     username = name,
-    capabilities = ["mining", "building", "farming", "combat"]
+    capabilities = ["mining", "building", "farming", "combat"],
+    authType = AuthType.OFFLINE,
+    credentials = {},
+    backendServer = null,
+    autoJoinBackend = true,
+    reconnectOptions = { enabled: true }
   } = config;
 
-  console.log(`[EnhancedAgent] Creating ${name} with capabilities: ${capabilities.join(", ")}`);
+  // Create logger
+  const logger = createLogger(name);
+  logger.info(`Creating enhanced agent with capabilities: ${capabilities.join(", ")}`);
+
+  // Create secure bot configuration
+  let botConfig;
+  try {
+    botConfig = createSecureBotConfig({
+      host,
+      port,
+      username,
+      authType,
+      credentials,
+      version: false // Auto-detect
+    });
+  } catch (err) {
+    logger.error(`Failed to create bot config: ${err.message}`);
+    throw err;
+  }
 
   // Create bot
-  const bot = mineflayer.createBot({
-    host,
-    port,
-    username,
-    version: false // Auto-detect
-  });
+  const bot = mineflayer.createBot(botConfig);
+  bot.logger = logger;
+
+  // Set up server network if backend server specified
+  if (backendServer) {
+    logger.info(`Configuring backend server join: ${backendServer}`);
+    attachServerNetwork(bot, {
+      name,
+      targetServer: backendServer,
+      autoJoinServer: autoJoinBackend
+    });
+  }
 
   // Wait for spawn
   await new Promise((resolve, reject) => {
-    bot.once("spawn", resolve);
-    bot.once("error", reject);
+    bot.once("spawn", () => {
+      logger.info("Bot spawned successfully", {
+        position: bot.entity?.position,
+        gameMode: bot.game?.gameMode
+      });
+      resolve();
+    });
+    bot.once("error", (err) => {
+      logger.error(`Spawn error: ${err.message}`);
+      reject(err);
+    });
     setTimeout(() => reject(new Error("Spawn timeout")), 30000);
   });
-
-  console.log(`[EnhancedAgent] ${name} spawned successfully`);
 
   // Load pathfinder
   bot.loadPlugin(pathfinder);
@@ -52,6 +96,7 @@ async function createEnhancedAgent(config) {
   attachAgentRuntime(bot, name);
 
   // Initialize advanced systems
+  logger.debug("Initializing behavior systems");
   const combat = new CombatSystem(bot, name);
   const farming = new FarmingSystem(bot, name);
   const building = new BuildingSystem(bot, name);
@@ -59,14 +104,27 @@ async function createEnhancedAgent(config) {
   const inventory = new InventoryManager(bot, name);
 
   // Register with coordinators
+  logger.debug("Registering with team coordinators");
   teamCoordinator.registerBot(name, bot, capabilities);
   realtimeCoordinator.registerBot(name, bot);
+
+  // Set up reconnection if enabled
+  if (reconnectOptions.enabled) {
+    const reconnectManager = setupReconnect(
+      bot,
+      () => createEnhancedAgent(config),
+      reconnectOptions
+    );
+    bot.reconnectManager = reconnectManager;
+    logger.info("Reconnection enabled");
+  }
 
   // Create enhanced bot interface
   const enhancedBot = {
     bot,
     name,
     capabilities,
+    logger,
 
     // Systems
     combat,
@@ -79,11 +137,11 @@ async function createEnhancedAgent(config) {
     async executeTask(taskId) {
       const task = teamCoordinator.taskQueue.find(t => t.id === taskId);
       if (!task) {
-        console.log(`[${name}] Task ${taskId} not found`);
+        logger.warn(`Task ${taskId} not found`);
         return false;
       }
 
-      console.log(`[${name}] Executing task: ${task.type}`);
+      logger.info(`Executing task: ${task.type}`, { taskId, data: task.data });
 
       try {
         let result = false;
@@ -129,31 +187,33 @@ async function createEnhancedAgent(config) {
             break;
 
           default:
-            console.log(`[${name}] Unknown task type: ${task.type}`);
+            logger.warn(`Unknown task type: ${task.type}`);
             result = false;
         }
 
         if (result) {
           teamCoordinator.completeTask(taskId, { success: true });
+          logger.info("Task completed successfully", { taskId, type: task.type });
         } else {
           teamCoordinator.failTask(taskId, "Execution failed");
+          logger.warn("Task execution failed", { taskId, type: task.type });
         }
 
         return result;
 
       } catch (err) {
-        console.error(`[${name}] Task execution error:`, err.message);
+        logger.error(`Task execution error: ${err.message}`, { taskId, type: task.type });
         teamCoordinator.failTask(taskId, err.message);
         return false;
       }
     },
 
     async mineResource(resourceType, amount = 1) {
-      console.log(`[${name}] Mining ${amount}x ${resourceType}`);
+      logger.info(`Mining ${amount}x ${resourceType}`);
 
       const resource = perception.findNearestResource(resourceType);
       if (!resource) {
-        console.log(`[${name}] ${resourceType} not found nearby`);
+        logger.warn(`${resourceType} not found nearby`);
         return false;
       }
 
@@ -168,7 +228,7 @@ async function createEnhancedAgent(config) {
         const block = bot.blockAt(resource.position);
         if (block && block.name === resourceType) {
           await bot.dig(block);
-          console.log(`[${name}] Mined ${resourceType}`);
+          logger.info(`Mined ${resourceType}`);
 
           logEvent(name, "mining", { resource: resourceType });
           return true;
@@ -177,7 +237,7 @@ async function createEnhancedAgent(config) {
         return false;
 
       } catch (err) {
-        console.error(`[${name}] Mining failed:`, err.message);
+        logger.error(`Mining failed: ${err.message}`);
         return false;
       }
     },
@@ -231,7 +291,7 @@ async function createEnhancedAgent(config) {
       if (summary.dangerLevel > 30) {
         // Combat mode
         if (combat.combatMode !== "passive") {
-          console.log(`[${name}] Danger detected (level ${summary.dangerLevel}), entering combat mode`);
+          logger.warn(`Danger detected (level ${summary.dangerLevel}), entering combat mode`);
         }
       } else {
         // Look for opportunities
@@ -249,13 +309,13 @@ async function createEnhancedAgent(config) {
     },
 
     startAutonomousMode(intervalMs = 5000) {
-      console.log(`[${name}] Starting autonomous mode (tick every ${intervalMs}ms)`);
+      logger.info(`Starting autonomous mode (tick every ${intervalMs}ms)`);
 
       const autonomousInterval = setInterval(async () => {
         try {
           await this.autonomousTick();
         } catch (err) {
-          console.error(`[${name}] Autonomous tick error:`, err.message);
+          logger.error(`Autonomous tick error: ${err.message}`);
         }
       }, intervalMs);
 
@@ -266,7 +326,7 @@ async function createEnhancedAgent(config) {
     stopAutonomousMode() {
       if (this.autonomousInterval) {
         clearInterval(this.autonomousInterval);
-        console.log(`[${name}] Stopped autonomous mode`);
+        logger.info("Stopped autonomous mode");
       }
     }
   };
@@ -278,20 +338,26 @@ async function createEnhancedAgent(config) {
     // Check if we can help
     const botData = teamCoordinator.bots.get(name);
     if (botData?.status === "idle" && message.data.urgency >= 7) {
-      console.log(`[${name}] Responding to help request from ${message.data.from}`);
+      logger.info(`Responding to help request from ${message.data.from}`, {
+        urgency: message.data.urgency
+      });
       realtimeCoordinator.respondToHelp(name, message.data.from, true);
     }
   });
 
   realtimeCoordinator.on("danger_alert", (message) => {
     if (message.data.severity >= 8) {
-      console.log(`[${name}] High danger alert from ${message.data.from}: ${message.data.dangerType}`);
+      logger.warn(`High danger alert from ${message.data.from}: ${message.data.dangerType}`, {
+        severity: message.data.severity
+      });
       // Could implement retreat logic here
     }
   });
 
   realtimeCoordinator.on("resource_found", (message) => {
-    console.log(`[${name}] ${message.data.finder} found ${message.data.resourceType}`);
+    logger.info(`${message.data.finder} found ${message.data.resourceType}`, {
+      position: message.data.position
+    });
     // Could navigate to shared resource location
   });
 
@@ -307,33 +373,53 @@ async function createEnhancedSquad(squadConfig) {
   const {
     host = "localhost",
     port = 25565,
-    bots = []
+    bots = [],
+    authType = AuthType.OFFLINE,
+    credentials = {},
+    backendServer = null,
+    autoJoinBackend = true,
+    reconnectOptions = { enabled: true },
+    staggerDelay = 2000
   } = squadConfig;
+
+  const squadLogger = createLogger("Squad");
+  squadLogger.info(`Creating squad with ${bots.length} bots`);
 
   const squad = [];
 
   for (const botConfig of bots) {
     try {
+      squadLogger.info(`Creating bot: ${botConfig.name}`);
+
       const bot = await createEnhancedAgent({
         ...botConfig,
         host,
-        port
+        port,
+        authType: botConfig.authType || authType,
+        credentials: botConfig.credentials || credentials,
+        backendServer: botConfig.backendServer || backendServer,
+        autoJoinBackend: botConfig.autoJoinBackend !== undefined ? botConfig.autoJoinBackend : autoJoinBackend,
+        reconnectOptions: botConfig.reconnectOptions || reconnectOptions
       });
 
       squad.push(bot);
 
       // Stagger bot creation to avoid overwhelming server
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (staggerDelay > 0) {
+        await new Promise(resolve => setTimeout(resolve, staggerDelay));
+      }
 
     } catch (err) {
-      console.error(`Failed to create bot ${botConfig.name}:`, err.message);
+      squadLogger.error(`Failed to create bot ${botConfig.name}: ${err.message}`);
     }
   }
 
-  console.log(`[EnhancedSquad] Created ${squad.length}/${bots.length} bots`);
+  squadLogger.info(`Created ${squad.length}/${bots.length} bots successfully`);
 
   // Start all bots in autonomous mode
-  squad.forEach(bot => bot.startAutonomousMode());
+  squad.forEach(bot => {
+    bot.startAutonomousMode();
+  });
 
   return squad;
 }
