@@ -1,0 +1,129 @@
+{
+  "_comment": "Minecraft Bot Squad Configuration Example",
+  "_note": "Copy this file to bot-config.json and customize for your setup",
+
+  "server": {
+    "host": "play.example.com",
+    "port": 25565,
+    "version": false
+  },
+
+  "network": {
+    "_comment": "Configuration for proxy networks (BungeeCord/Velocity)",
+    "isProxy": false,
+    "backendServer": null,
+    "autoJoinBackend": true,
+    "joinDelay": 2000,
+    "maxRetries": 3,
+    "retryDelay": 5000
+  },
+
+  "authentication": {
+    "_comment": "Authentication type: offline, microsoft, or mojang",
+    "type": "offline",
+    "credentials": {
+      "_microsoft_example": {
+        "authCacheDir": "./auth_cache"
+      },
+      "_mojang_example": {
+        "password": "your_password"
+      }
+    }
+  },
+
+  "reconnect": {
+    "_comment": "Automatic reconnection settings",
+    "enabled": true,
+    "baseDelayMs": 2000,
+    "maxDelayMs": 60000,
+    "factor": 2,
+    "jitter": true,
+    "maxAttempts": -1
+  },
+
+  "behavior": {
+    "_comment": "Bot behavior settings",
+    "autoRespawn": true,
+    "sprintByDefault": false,
+    "digWithHandIfNoTool": false,
+    "hideErrors": false
+  },
+
+  "logging": {
+    "_comment": "Logging configuration",
+    "level": "info",
+    "logChat": true,
+    "logEvents": true,
+    "logFile": null
+  },
+
+  "_examples": {
+    "_proxy_network": {
+      "server": {
+        "host": "proxy.hypixel.net",
+        "port": 25565
+      },
+      "network": {
+        "isProxy": true,
+        "backendServer": "lobby",
+        "autoJoinBackend": true,
+        "joinDelay": 2000
+      }
+    },
+
+    "_microsoft_auth": {
+      "authentication": {
+        "type": "microsoft",
+        "credentials": {
+          "authCacheDir": "./auth_cache"
+        }
+      }
+    },
+
+    "_premium_server": {
+      "server": {
+        "host": "premium-server.com",
+        "port": 25565
+      },
+      "authentication": {
+        "type": "microsoft",
+        "credentials": {
+          "authCacheDir": "./auth_cache"
+        }
+      }
+    },
+
+    "_bungeecord_network": {
+      "server": {
+        "host": "bungee.example.com",
+        "port": 25565
+      },
+      "network": {
+        "isProxy": true,
+        "backendServer": "survival",
+        "autoJoinBackend": true
+      },
+      "authentication": {
+        "type": "offline"
+      }
+    },
+
+    "_with_logging": {
+      "logging": {
+        "level": "debug",
+        "logChat": true,
+        "logEvents": true,
+        "logFile": "./logs/bots.log"
+      }
+    },
+
+    "_limited_reconnect": {
+      "reconnect": {
+        "enabled": true,
+        "baseDelayMs": 1000,
+        "maxDelayMs": 30000,
+        "maxAttempts": 10
+      }
+    }
+  }
+}
