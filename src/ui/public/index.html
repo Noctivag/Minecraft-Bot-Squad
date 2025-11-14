@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Bot Squad - Management UI</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>🤖 Bot Squad</h1>
+            </div>
+            <nav class="nav">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-view="bots">
+                    <span class="icon">🤖</span>
+                    <span>Bots</span>
+                </a>
+                <a href="#" class="nav-item" data-view="tasks">
+                    <span class="icon">✅</span>
+                    <span>Tasks</span>
+                </a>
+                <a href="#" class="nav-item" data-view="logs">
+                    <span class="icon">📝</span>
+                    <span>Activity Logs</span>
+                </a>
+                <a href="#" class="nav-item" data-view="config">
+                    <span class="icon">⚙️</span>
+                    <span>Configuration</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="connection-status">
+                    <span class="status-indicator" id="ws-status"></span>
+                    <span id="ws-status-text">Connecting...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h2 id="view-title">Dashboard</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="add-bot-btn">
+                        <span>+</span> Add Bot
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <div class="view active" id="dashboard-view">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🤖</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Bots</div>
+                            <div class="stat-value" id="stat-total-bots">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Active Bots</div>
+                            <div class="stat-value" id="stat-active-bots">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Tasks</div>
+                            <div class="stat-value" id="stat-total-tasks">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📝</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Recent Logs</div>
+                            <div class="stat-value" id="stat-recent-logs">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="panel">
+                        <h3>Bot Overview</h3>
+                        <div id="dashboard-bots" class="bot-list"></div>
+                    </div>
+                    <div class="panel">
+                        <h3>Recent Activity</h3>
+                        <div id="dashboard-activity" class="activity-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bots View -->
+            <div class="view" id="bots-view">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>All Bots</h3>
+                        <input type="text" class="search-input" id="bot-search" placeholder="Search bots...">
+                    </div>
+                    <div id="bots-list" class="bots-grid"></div>
+                </div>
+            </div>
+
+            <!-- Tasks View -->
+            <div class="view" id="tasks-view">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Bot Tasks</h3>
+                        <select id="task-bot-filter" class="select-input">
+                            <option value="">All Bots</option>
+                        </select>
+                    </div>
+                    <div id="tasks-list" class="tasks-list"></div>
+                </div>
+            </div>
+
+            <!-- Logs View -->
+            <div class="view" id="logs-view">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Activity Logs</h3>
+                        <div class="log-filters">
+                            <select id="log-level-filter" class="select-input">
+                                <option value="">All Levels</option>
+                                <option value="info">Info</option>
+                                <option value="warn">Warning</option>
+                                <option value="error">Error</option>
+                                <option value="chat">Chat</option>
+                            </select>
+                            <select id="log-bot-filter" class="select-input">
+                                <option value="">All Bots</option>
+                            </select>
+                            <button class="btn btn-secondary" id="clear-logs-btn">Clear</button>
+                        </div>
+                    </div>
+                    <div id="logs-list" class="logs-container"></div>
+                </div>
+            </div>
+
+            <!-- Config View -->
+            <div class="view" id="config-view">
+                <div class="config-grid">
+                    <div class="panel">
+                        <h3>Server Configuration</h3>
+                        <form id="server-config-form" class="config-form">
+                            <div class="form-group">
+                                <label for="server-host">Host</label>
+                                <input type="text" id="server-host" name="host" placeholder="localhost">
+                            </div>
+                            <div class="form-group">
+                                <label for="server-port">Port</label>
+                                <input type="number" id="server-port" name="port" placeholder="25565">
+                            </div>
+                            <div class="form-group">
+                                <label for="server-version">Version (optional)</label>
+                                <input type="text" id="server-version" name="version" placeholder="Auto-detect">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Server Config</button>
+                        </form>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Network Configuration</h3>
+                        <form id="network-config-form" class="config-form">
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="network-is-proxy" name="isProxy">
+                                    <span>Server is Proxy (BungeeCord/Velocity)</span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="network-backend">Backend Server</label>
+                                <input type="text" id="network-backend" name="backendServer" placeholder="survival">
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="network-auto-join" name="autoJoinBackend" checked>
+                                    <span>Auto-join Backend Server</span>
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Network Config</button>
+                        </form>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Authentication</h3>
+                        <form id="auth-config-form" class="config-form">
+                            <div class="form-group">
+                                <label for="auth-type">Authentication Type</label>
+                                <select id="auth-type" name="type" class="select-input">
+                                    <option value="offline">Offline (Cracked)</option>
+                                    <option value="microsoft">Microsoft Account</option>
+                                    <option value="mojang">Mojang (Legacy)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="auth-cache-group" style="display: none;">
+                                <label for="auth-cache-dir">Auth Cache Directory</label>
+                                <input type="text" id="auth-cache-dir" name="authCacheDir" placeholder="./auth_cache">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Auth Config</button>
+                        </form>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Behavior Settings</h3>
+                        <form id="behavior-config-form" class="config-form">
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="behavior-auto-respawn" name="autoRespawn" checked>
+                                    <span>Auto Respawn on Death</span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="behavior-sprint" name="sprintByDefault">
+                                    <span>Sprint by Default</span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="behavior-hide-errors" name="hideErrors">
+                                    <span>Hide Connection Errors</span>
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Behavior Config</button>
+                        </form>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Logging</h3>
+                        <form id="logging-config-form" class="config-form">
+                            <div class="form-group">
+                                <label for="log-level">Log Level</label>
+                                <select id="log-level" name="level" class="select-input">
+                                    <option value="debug">Debug</option>
+                                    <option value="info" selected>Info</option>
+                                    <option value="warn">Warning</option>
+                                    <option value="error">Error</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="log-chat" name="logChat" checked>
+                                    <span>Log Chat Messages</span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="log-events" name="logEvents" checked>
+                                    <span>Log Events</span>
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Logging Config</button>
+                        </form>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Reconnection</h3>
+                        <form id="reconnect-config-form" class="config-form">
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="reconnect-enabled" name="enabled" checked>
+                                    <span>Enable Auto-Reconnect</span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="reconnect-max-attempts">Max Attempts (-1 = unlimited)</label>
+                                <input type="number" id="reconnect-max-attempts" name="maxAttempts" value="-1">
+                            </div>
+                            <div class="form-group">
+                                <label for="reconnect-base-delay">Base Delay (ms)</label>
+                                <input type="number" id="reconnect-base-delay" name="baseDelayMs" value="1000">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Reconnect Config</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Bot Modal -->
+    <div class="modal" id="add-bot-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Bot</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="add-bot-form" class="config-form">
+                <div class="form-group">
+                    <label for="new-bot-name">Bot Name</label>
+                    <input type="text" id="new-bot-name" name="name" required placeholder="Bot_1">
+                </div>
+                <div class="form-group">
+                    <label for="new-bot-capabilities">Capabilities (comma separated)</label>
+                    <input type="text" id="new-bot-capabilities" name="capabilities" placeholder="mining, building, farming, combat">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Bot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
