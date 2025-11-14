@@ -1,0 +1,34 @@
+{
+  "name": "minecraft-bot-squad",
+  "version": "2.0.0",
+  "description": "Advanced Minecraft bot squad with management UI",
+  "main": "index.js",
+  "scripts": {
+    "start": "node examples/withUI.js",
+    "ui": "node examples/withUI.js",
+    "squad": "node examples/advancedSquad.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "minecraft",
+    "bot",
+    "mineflayer",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.14.2",
+    "mineflayer": "^4.17.0",
+    "mineflayer-pathfinder": "^2.4.3",
+    "prismarine-viewer": "^1.24.0",
+    "vec3": "^0.1.8"
+  },
+  "devDependencies": {
+    "eslint": "^8.50.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
