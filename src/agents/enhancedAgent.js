@@ -10,8 +10,12 @@ const { FarmingSystem } = require("./behaviors/farmingSystem");
 const { BuildingSystem } = require("./behaviors/buildingSystem");
 const { PerceptionSystem } = require("./behaviors/perceptionSystem");
 const { InventoryManager } = require("./behaviors/inventoryManager");
+const HumanBehavior = require("./behaviors/humanBehavior");
+const IdleBehavior = require("./behaviors/idleBehavior");
+const ChatSystem = require("./behaviors/chatSystem");
 const { teamCoordinator } = require("../coordination/teamCoordinator");
 const { realtimeCoordinator } = require("../coordination/realtimeCoordinator");
+const advancedCoordination = require("../coordination/advancedCoordination");
 const { logEvent } = require("../memory/store");
 const { attachAgentRuntime } = require("./agentRuntime");
 const {
@@ -103,10 +107,18 @@ async function createEnhancedAgent(config) {
   const perception = new PerceptionSystem(bot, name);
   const inventory = new InventoryManager(bot, name);
 
+  // Initialize NEW enhanced systems
+  logger.debug("Initializing enhanced systems (human behavior, idle, chat)");
+  bot.capabilities = capabilities; // Make capabilities accessible
+  const humanBehavior = new HumanBehavior(bot);
+  const idleBehavior = new IdleBehavior(bot);
+  const chatSystem = new ChatSystem(bot);
+
   // Register with coordinators
   logger.debug("Registering with team coordinators");
   teamCoordinator.registerBot(name, bot, capabilities);
   realtimeCoordinator.registerBot(name, bot);
+  advancedCoordination.registerBot(bot);
 
   // Set up reconnection if enabled
   if (reconnectOptions.enabled) {
@@ -126,12 +138,17 @@ async function createEnhancedAgent(config) {
     capabilities,
     logger,
 
-    // Systems
+    // Original systems
     combat,
     farming,
     building,
     perception,
     inventory,
+
+    // NEW enhanced systems
+    humanBehavior,
+    idleBehavior,
+    chatSystem,
 
     // Convenience methods
     async executeTask(taskId) {
@@ -219,16 +236,45 @@ async function createEnhancedAgent(config) {
 
       try {
         const { goals } = require("mineflayer-pathfinder");
-        await bot.pathfinder.goto(new goals.GoalBlock(
+
+        // Nutze menschliches Bewegungsverhalten
+        const goal = new goals.GoalBlock(
           resource.position.x,
           resource.position.y,
           resource.position.z
-        ));
+        );
+
+        await humanBehavior.moveWithVariation(goal, bot.pathfinder);
+
+        // Warte auf Ankunft
+        await new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (!bot.pathfinder.isMoving()) {
+              clearInterval(checkInterval);
+              resolve();
+            }
+          }, 100);
+
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            resolve();
+          }, 15000);
+        });
 
         const block = bot.blockAt(resource.position);
         if (block && block.name === resourceType) {
-          await bot.dig(block);
+          // Nutze menschliches Dig-Verhalten
+          await humanBehavior.digBlock(block, bot.pathfinder);
+
           logger.info(`Mined ${resourceType}`);
+
+          // Teile Ressource mit anderen Bots
+          advancedCoordination.shareResource(name, resourceType, resource.position, 1);
+
+          // Kommentiere Fund
+          if (Math.random() < 0.4) {
+            await chatSystem.commentOnActivity('found_resource', { resource: resourceType });
+          }
 
           logEvent(name, "mining", { resource: resourceType });
           return true;
@@ -244,10 +290,27 @@ async function createEnhancedAgent(config) {
 
     requestHelp(reason, urgency = 5) {
       realtimeCoordinator.requestHelp(name, reason, urgency);
+      advancedCoordination.requestHelp(name, reason, urgency);
     },
 
     shareResource(resourceType, position, amount) {
       realtimeCoordinator.shareResource(name, resourceType, position, amount);
+      advancedCoordination.shareResource(name, resourceType, position, amount);
+    },
+
+    // Erweiterte Koordinations-Methoden
+    async createGroup(objective, requiredBots = 2) {
+      logger.info(`Creating group for: ${objective}`);
+      const groupId = await advancedCoordination.createGroup(objective, requiredBots, name);
+      return groupId;
+    },
+
+    async executeGroupObjective(groupId) {
+      await advancedCoordination.executeGroupObjective(groupId);
+    },
+
+    getAvailableResources() {
+      return advancedCoordination.getAvailableResources(name);
     },
 
     getStatus() {
@@ -261,7 +324,12 @@ async function createEnhancedAgent(config) {
         farming: farming.getStatus(),
         building: building.getStatus(),
         perception: perception.getSummary(),
-        inventory: inventory.getInventoryReport()
+        inventory: inventory.getInventoryReport(),
+        // NEW enhanced systems status
+        humanBehavior: humanBehavior.getStats(),
+        idleBehavior: idleBehavior.getStatus(),
+        chatSystem: chatSystem.getStatus(),
+        coordination: advancedCoordination.getStatus()
       };
     },
 
@@ -274,24 +342,52 @@ async function createEnhancedAgent(config) {
         health: bot.health
       });
 
+      // Gelegentlich menschliches Idle-Verhalten zeigen
+      if (Math.random() < 0.1) {
+        await humanBehavior.performIdleHumanBehavior();
+      }
+
+      // Gelegentlich umschauen (natürliches Verhalten)
+      if (Math.random() < 0.15) {
+        await humanBehavior.lookAround();
+      }
+
       // Check for assigned tasks
       const botData = teamCoordinator.bots.get(name);
       if (botData?.currentTask) {
+        // Stoppe Idle-Verhalten während Tasks
+        if (idleBehavior.isActive) {
+          idleBehavior.stop();
+        }
         await this.executeTask(botData.currentTask);
         return;
       }
 
       // Auto-deposit if inventory full
       if (inventory.isInventoryFull()) {
+        if (idleBehavior.isActive) {
+          idleBehavior.stop();
+        }
         await inventory.autoDeposit();
+        return;
       }
 
       // Check for danger
       const summary = perception.getSummary();
       if (summary.dangerLevel > 30) {
+        // Stoppe Idle während Gefahr
+        if (idleBehavior.isActive) {
+          idleBehavior.stop();
+        }
+
         // Combat mode
         if (combat.combatMode !== "passive") {
           logger.warn(`Danger detected (level ${summary.dangerLevel}), entering combat mode`);
+        }
+
+        // Kommentiere Gefahr
+        if (Math.random() < 0.3) {
+          await chatSystem.commentOnActivity('combat', { dangerLevel: summary.dangerLevel });
         }
       } else {
         // Look for opportunities
@@ -301,10 +397,40 @@ async function createEnhancedAgent(config) {
           const opp = opportunities[0];
 
           if (opp.type === "mining" && capabilities.includes("mining")) {
+            // Stoppe Idle für Mining
+            if (idleBehavior.isActive) {
+              idleBehavior.stop();
+            }
+
+            // Kommentiere Mining-Aktivität
+            if (Math.random() < 0.3) {
+              await chatSystem.commentOnActivity('mining', { resource: opp.resource });
+            }
+
             // Mine nearby resource
             await this.mineResource(opp.resource);
+            return;
+          } else if (opp.type === "farming" && capabilities.includes("farming")) {
+            if (idleBehavior.isActive) {
+              idleBehavior.stop();
+            }
+
+            if (Math.random() < 0.3) {
+              await chatSystem.commentOnActivity('farming');
+            }
           }
         }
+
+        // Keine Tasks und keine Gefahren - starte Idle-Verhalten
+        if (!idleBehavior.isActive) {
+          logger.debug("No tasks assigned, starting idle behavior");
+          idleBehavior.start();
+        }
+      }
+
+      // Gelegentliche zufällige Pause
+      if (Math.random() < 0.05) {
+        await humanBehavior.takeRandomPause();
       }
     },
 
@@ -342,6 +468,9 @@ async function createEnhancedAgent(config) {
         urgency: message.data.urgency
       });
       realtimeCoordinator.respondToHelp(name, message.data.from, true);
+
+      // Nutze advancedCoordination für Hilfe
+      await advancedCoordination.requestHelp(message.data.from, message.data.reason, message.data.urgency);
     }
   });
 
@@ -350,7 +479,13 @@ async function createEnhancedAgent(config) {
       logger.warn(`High danger alert from ${message.data.from}: ${message.data.dangerType}`, {
         severity: message.data.severity
       });
-      // Could implement retreat logic here
+
+      // Reagiere mit Chat
+      if (Math.random() < 0.5) {
+        setTimeout(() => {
+          enhancedBot.bot.chat(`Vorsicht! ${message.data.from} meldet Gefahr!`);
+        }, 1000 + Math.random() * 2000);
+      }
     }
   });
 
@@ -358,7 +493,35 @@ async function createEnhancedAgent(config) {
     logger.info(`${message.data.finder} found ${message.data.resourceType}`, {
       position: message.data.position
     });
-    // Could navigate to shared resource location
+
+    // Reagiere mit Chat
+    if (Math.random() < 0.3) {
+      setTimeout(() => {
+        const responses = [
+          `Gut gemacht, ${message.data.finder}!`,
+          `Nice Fund, ${message.data.finder}!`,
+          `Super, ${message.data.finder}!`
+        ];
+        enhancedBot.bot.chat(responses[Math.floor(Math.random() * responses.length)]);
+      }, 500 + Math.random() * 1500);
+    }
+  });
+
+  // Erweiterte Koordinations-Events
+  bot.on('health', () => {
+    // Bei niedriger Gesundheit Hilfe anfordern
+    if (bot.health < 6 && bot.health > 0) {
+      advancedCoordination.requestHelp(name, 'Low health, need assistance!', 8);
+    }
+  });
+
+  bot.on('playerJoined', (player) => {
+    // Nutze ChatSystem für Begrüßung (wird dort automatisch gehandhabt)
+    logger.info(`${player.username} joined the server`);
+  });
+
+  bot.on('playerLeft', (player) => {
+    logger.info(`${player.username} left the server`);
   });
 
   logEvent(name, "agent", { action: "created", capabilities });
